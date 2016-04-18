@@ -1,10 +1,14 @@
 package ai
 
 import tyckiting._
+import com.marmar.JAI
+import scala.collection.JavaConverters._
+import scala.collection.JavaConversions._
 
 object MyScalaAi extends Tyckiting {
   
-  def teamName = "My Scala AI"
+  def teamName = "MarMar"
+  def ai = new JAI()
     
   def makeDecisions(
     roundId: Int,
@@ -12,7 +16,6 @@ object MyScalaAi extends Tyckiting {
     bots: List[Bot],
     config: GameConfig) =
   {
-    events.foreach(e => println(s"Event: $e"))
-    bots.map(bot => bot.move(bot.pos.x + 1, bot.pos.y + 1))
+    ai.makeDecisions(roundId, events.asJava, bots.asJava, config).toList
   }
 }

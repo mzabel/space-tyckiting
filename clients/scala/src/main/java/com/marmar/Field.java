@@ -70,7 +70,7 @@ public class Field {
 		}
 		enemyProb/=enemyNeighbors;
 		hitZoneProb/=hitZoneNeighbors;
-		enemyProb*=1.05;
+		enemyProb*=1.005;
 		hitZoneProb*=0.75;
 	}
 

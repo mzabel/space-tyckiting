@@ -11,6 +11,7 @@ public class Grid {
 	private int offset;
 	private Field[][] fields;
 	private ArrayList<Field> fieldList;
+	private ArrayList<Field> scanArea;
 	
 	public Grid(int mapSize) {
 		offset=mapSize;
@@ -21,10 +22,16 @@ public class Grid {
 			fields[offset+p.x()][offset+p.y()]=f;
 			fieldList.add(f);
 		}
+		
 		fieldList.trimToSize();
 		for(Field f:fieldList) {
 			f.learnNeighbors(this);
 		}
+		
+		Field centre=getField(0, 0);
+		scanArea=new ArrayList<>();
+		for(int i=0;i<=mapSize-2;i++)
+			scanArea.addAll(centre.getNeighbors(i));
 	}
 	
 	public Field getField(int x, int y) {
@@ -69,6 +76,14 @@ public class Grid {
 
 	public List<Field> getBestEnemyProbs() {
 		ArrayList<Field> l=new ArrayList<>(fieldList);
+		Collections.shuffle(l);
+		return l.stream()
+			.sorted((a,b)->-Double.compare(a.getEnemyProb(), b.getEnemyProb()))
+			.collect(Collectors.toList());
+	}
+	
+	public List<Field> getBestScanEnemyProbs() {
+		ArrayList<Field> l=new ArrayList<>(scanArea);
 		Collections.shuffle(l);
 		return l.stream()
 			.sorted((a,b)->-Double.compare(a.getEnemyProb(), b.getEnemyProb()))

@@ -39,7 +39,7 @@ public class Field {
 
 	@Override
 	public String toString() {
-		return "F[x=" + x + ", y=" + y + "]";
+		return "F(" + x + ", " + y + ")";
 	}
 
 	public void nextTurn() {
@@ -70,8 +70,8 @@ public class Field {
 		}
 		enemyProb/=enemyNeighbors;
 		hitZoneProb/=hitZoneNeighbors;
-		enemyProb=0.75*enemyProb+0.0075;
-		hitZoneProb=0.75*hitZoneProb+0.0075;
+		enemyProb*=1.05;
+		hitZoneProb*=0.75;
 	}
 
 	public void addHitZoneProb(double strength) {

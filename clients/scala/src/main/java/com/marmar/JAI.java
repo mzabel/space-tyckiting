@@ -1,6 +1,7 @@
 package com.marmar;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
@@ -52,14 +53,14 @@ public class JAI {
 		List<Bot> scanner = new ArrayList<>();
 		List<Bot> shooter = new ArrayList<>();
 		
-		ArrayList<Field> bestEnemyProbs = new ArrayList<>(grid.getBestEnemyProbs());
+		List<Field> bestEnemyProbs = grid.getBestEnemyProbs();
 		double bestEnemyProb=bestEnemyProbs.get(0).getEnemyProb();
 		System.out.println("\tBest Enemy Prob: "+bestEnemyProb);
 		for(Bot b:ownBots) {
 			if(b.alive()) {
 				System.out.println("\t"+b.botId()+"\tdodge prob: "+prob(grid.getHitZoneProb(b.pos())));
 				if(r.nextDouble()<prob(grid.getHitZoneProb(b.pos()))) {
-					actions.add(move(b));
+					actions.add(move(b, ownBots));
 				}
 				else {
 					if(r.nextDouble()<prob(bestEnemyProb)) {
@@ -73,7 +74,7 @@ public class JAI {
 		}
 		
 		shoot(actions, shooter, bestEnemyProbs);
-		scan(actions, scanner, ownBots, bestEnemyProbs);
+		scan(actions, scanner, ownBots, grid.getBestScanEnemyProbs());
 		
 		System.out.println();
 		for(Action a:actions)
@@ -82,7 +83,7 @@ public class JAI {
 		return actions;
 	}
 
-	private void scan(List<Action> actions, List<Bot> scanner, List<Bot> ownBots, ArrayList<Field> bestEnemyProbs) {
+	private void scan(List<Action> actions, List<Bot> scanner, List<Bot> ownBots, List<Field> bestEnemyProbs) {
 		LinkedHashSet<Position> candidates = new LinkedHashSet<>(bestEnemyProbs.stream().map(Field::getPos).collect(Collectors.toList()));
 		for(Bot b:ownBots) {
 			if(b.alive()) {
@@ -92,7 +93,7 @@ public class JAI {
 		for(Bot b:scanner) {
 			if(candidates.isEmpty()) {
 				System.out.println("\t"+b.botId()+"\tcan't scan anything");
-				actions.add(move(b));
+				actions.add(move(b, ownBots));
 			}
 			else {
 				Position best=candidates.iterator().next();
@@ -103,7 +104,7 @@ public class JAI {
 		}
 	}
 
-	private void shoot(List<Action> actions, List<Bot> shooter, ArrayList<Field> bestEnemyProbs) {
+	private void shoot(List<Action> actions, List<Bot> shooter, List<Field> bestEnemyProbs) {
 		botsLoop:for(Bot b:shooter) {
 			for(Field target:bestEnemyProbs) {
 				if(r.nextDouble()<prob(target.getEnemyProb())) {
@@ -120,16 +121,35 @@ public class JAI {
 		}
 	}
 
-	private MoveAction move(Bot b) {
+	private MoveAction move(Bot b, List<Bot> ownBots) {
 		int moveRange;
 		if(r.nextDouble()<0.666)
 			moveRange=config.move();
 		else
 			moveRange=r.nextInt(config.move()+1);
 		List<Field> candidates=new ArrayList<>(grid.getField(b.pos()).getNeighbors(moveRange));
-		System.out.println("\t"+b.botId()+"\tmoves "+moveRange);
-		//TODO select smarter
-		return Actions.move(b, candidates.get(r.nextInt(candidates.size())).getPos());
+		candidates.removeIf(f -> {
+			for(Bot o:ownBots) {
+				if(o.alive() && o.botId()!=b.botId() && GridUtil.distance(b.pos(), o.pos())<2);
+					return true;
+			}
+			return false;
+		});
+		if(candidates.isEmpty()) {
+			candidates=new ArrayList<>(grid.getField(b.pos()).getNeighbors(config.move()));
+		}
+		
+		double random=r.nextDouble()*candidates.stream().mapToDouble(f -> f.getHitZoneProb()).sum();
+		int id=0;
+		while(random>candidates.get(id).getHitZoneProb()) {
+			random-=candidates.get(id).getHitZoneProb();
+			id++;
+		}
+		if(id>=candidates.size())
+			System.err.println("ÄÄÄÄÄÄ");
+		Position target=candidates.get(id).getPos();
+		System.out.println("\t"+b.botId()+"\tmoves "+moveRange+" to "+target);
+		return Actions.move(b, target);
 	}
 
 	private double prob(double prob) {
@@ -140,34 +160,50 @@ public class JAI {
 		//set sight to 0 probability
 		for(Bot b:ownBotList)
 			for(Position p:GridUtil.iterateRadius(b.pos().x(), b.pos().y(), config.see()))
-				grid.setEnemyProb(p,0);
+				grid.setEnemyProb(p,0.01);
 		//set last scans to 0 probability
 		for(Action a:lastActions) {
 			if(a instanceof RadarAction) {
 				Position t=((RadarAction) a).pos();
 				for(Position p:GridUtil.iterateRadius(t.x(), t.y(), config.radar()))
-					grid.setEnemyProb(p,0);
+					grid.setEnemyProb(p,0.01);
+			}
+		}
+		HashSet<Integer> hitEnemies=new HashSet<>();
+		HashSet<Integer> killedEnemies=new HashSet<>();
+		for(Event e:events) {
+			if(e instanceof HitEvent) {
+				if(ownBots[((HitEvent) e).botId()]==null)
+					hitEnemies.add(((HitEvent) e).botId());
+			}
+			else if(e instanceof DieEvent) {
+				killedEnemies.add(((DieEvent) e).botId());
+			}
+		}
+		hitEnemies.removeAll(killedEnemies);
+		if(hitEnemies.isEmpty()) {
+			for(Action a:lastActions) {
+				if(a instanceof CannonAction) {
+					Position t=((CannonAction) a).pos();
+					for(Position p:GridUtil.iterateRadius(t.x(), t.y(), config.cannon()))
+						grid.setEnemyProb(p,0.01);
+				}
 			}
 		}
 		
+		
 		for (Event e : events) {
-			//TODO set sight and old scan to zero beforehand
-			/*if(e instanceof HitEvent) {
-				if(ownBots[((HitEvent) e).botId()]!=null)
-					grid.addHitZoneProb(ownBots[((HitEvent) e).botId()].pos());
-				//TODO do something if we hit an enemy
-			}
-			else */if(e instanceof DamagedEvent) {
+			if(e instanceof DamagedEvent) {
 				grid.addHitZoneProb(ownBots[((DamagedEvent) e).botId()].pos(),4);
 			}
 			else if(e instanceof DieEvent) {
 				//don't know yet
 			} 
 			else if(e instanceof SeeEvent) {
-				grid.addEnemyProb(((SeeEvent) e).pos(),4);
+				grid.addEnemyProb(((SeeEvent) e).pos(),6);
 			} 
 			else if(e instanceof RadarEchoEvent) {
-				grid.addEnemyProb(((RadarEchoEvent) e).pos(),4);
+				grid.addEnemyProb(((RadarEchoEvent) e).pos(),6);
 			} 
 			else if(e instanceof DetectedEvent) {
 				grid.addHitZoneProb(ownBots[((DetectedEvent) e).botId()].pos(),4);

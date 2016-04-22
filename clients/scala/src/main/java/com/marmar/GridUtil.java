@@ -47,4 +47,10 @@ public class GridUtil {
 	public static void main(String[] args) {
 		System.out.println(iterateRings(0, 0, 2));
 	}
+
+	public static int distance(Position a, Position b) {
+		return (	Math.abs(a.x() - b.x()) 
+		          + Math.abs(a.x() + a.y() - b.x() - b.y())
+		          + Math.abs(a.y() - b.y())) / 2;
+	}
 }

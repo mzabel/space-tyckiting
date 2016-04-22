@@ -5,9 +5,9 @@ case class GameConfig(
   radar: Int, see: Int, maxCount: Int, loopTime: Int)
   
 case class Position(x: Int, y: Int)
-case class Bot(botId: Int, name: String, hp: Int, alive: Boolean, pos: Position)
+case class Bot(botId: Int, name: String, hp: Int, teamId:Int, alive: Boolean, pos: Position)
 case class Team(teamId: Int, name: String, bots: List[Bot])
-case class BotNoPosNoHp(botId: Int, name: String, alive: Boolean)
+case class BotNoPosNoHp(botId: Int, name: String, teamId:Int, alive: Boolean)
 case class TeamNoPosNoHp(teamId: Int, name: String, bots: List[BotNoPosNoHp])
 
 sealed trait Event

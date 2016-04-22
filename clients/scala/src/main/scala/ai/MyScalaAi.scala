@@ -18,4 +18,8 @@ object MyScalaAi extends Tyckiting {
   {
     ai.makeDecisions(roundId, events.asJava, bots.asJava, config).toList
   }
+  
+  def init(config: GameConfig) {
+    ai.init(config)
+  }
 }

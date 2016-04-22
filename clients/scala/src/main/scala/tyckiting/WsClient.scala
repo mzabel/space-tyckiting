@@ -54,6 +54,7 @@ class WsClient(config: TyckitingConfig, ai: Ai) extends Rainbow {
   def onConnected(m: ConnectedMessage) {
     log(s"Connected to server, teamId: ${m.teamId}")
     gameConfig = m.config
+    ai.init(gameConfig);
     send(JoinMessage(ai.teamName))
   }
   

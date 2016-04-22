@@ -15,7 +15,7 @@ case class HitEvent(event: String, botId: Int, source: Int) extends Event
 case class DamagedEvent(event: String, botId: Int, damage: Int) extends Event
 case class DieEvent(event: String, botId: Int) extends Event
 case class SeeEvent(event: String, botId: Int, source: Int, pos: Position) extends Event
-case class RadarEchoEvent(event: String, botId: Int, source: Int, pos: Position) extends Event
+case class RadarEchoEvent(event: String, pos: Position) extends Event
 case class DetectedEvent(event: String, botId: Int) extends Event
 case class NoActionEvent(event: String, botId: Int) extends Event
 case class MoveEvent(event: String, botId: Int, pos: Position) extends Event

@@ -37,6 +37,8 @@ class WsClient(config: TyckitingConfig, ai: Ai) extends Rainbow {
   
   def logAndExit(event: String, t: Option[Throwable]) {
     log(s"$event${t.map(t => ": " + red"${t.getMessage}") getOrElse ""}")
+    if(t.isDefined)
+      t.get.printStackTrace()
     sys.exit
   }
   

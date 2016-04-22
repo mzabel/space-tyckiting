@@ -8,7 +8,6 @@ import scala.collection.JavaConversions._
 object MyScalaAi extends Tyckiting {
   
   def teamName = "MarMar"
-  def ai = new JAI()
     
   def makeDecisions(
     roundId: Int,
@@ -16,10 +15,10 @@ object MyScalaAi extends Tyckiting {
     bots: List[Bot],
     config: GameConfig) =
   {
-    ai.makeDecisions(roundId, events.asJava, bots.asJava, config).toList
+    JAI.instance().makeDecisions(roundId, events.asJava, bots.asJava, config).toList
   }
   
   def init(config: GameConfig) {
-    ai.init(config)
+    JAI.instance().init(config)
   }
 }

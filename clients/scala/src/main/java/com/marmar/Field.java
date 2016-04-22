@@ -5,12 +5,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import tyckiting.Position;
+
 public class Field {
 	private int x;
 	private int y;
 	private List<Set<Field>> neighborRings;
-	private double hitZoneProb=0.0;
-	private double enemyProb=0.0;
+	private double hitZoneProb=0.01;
+	private double enemyProb=0.01;
 	private double lastHitZoneProb=0.01;
 	private double lastEnemyProb=0.01;
 	
@@ -46,7 +48,50 @@ public class Field {
 	}
 
 	public void blur(int maxMove) {
-		
+		enemyProb=0;
+		hitZoneProb=0;
+		int enemyNeighbors=0;
+		int hitZoneNeighbors=0;
+		for(int i=0;i<=maxMove;i++) {
+			for(Field n:neighborRings.get(i)) {
+				enemyNeighbors++;
+				hitZoneNeighbors++;
+				enemyProb+=n.lastEnemyProb;
+				hitZoneProb+=n.lastHitZoneProb;
+				if(i==1) {
+					hitZoneNeighbors++;
+					hitZoneProb+=n.lastHitZoneProb;
+				}
+				else if(i==maxMove) {
+					enemyNeighbors++;
+					enemyProb+=n.lastEnemyProb;
+				}
+			}
+		}
+		enemyProb/=enemyNeighbors;
+		hitZoneProb/=hitZoneNeighbors;
+		enemyProb*=0.75;
+		hitZoneProb*=0.75;
+	}
+
+	public void addHitZoneProb(double strength) {
+		hitZoneProb+=strength;
+	}
+
+	public void addEnemyProb(double strength) {
+		enemyProb+=strength;
+	}
+
+	public double getHitZoneProb() {
+		return hitZoneProb;
+	}
+
+	public double getEnemyProb() {
+		return enemyProb;
+	}
+
+	public Position getPos() {
+		return new Position(x, y);
 	}
 	
 	

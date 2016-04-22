@@ -1,6 +1,10 @@
 package com.marmar;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import tyckiting.Position;
 
@@ -62,22 +66,26 @@ public class Grid {
 	}
 
 	public void addHitZoneProb(Position pos, double strength) {
-		// TODO Auto-generated method stub
-		
+		getField(pos).addHitZoneProb(strength);
 	}
 
 	public void addEnemyProb(Position pos, double strength) {
-		// TODO Auto-generated method stub
-		
+		getField(pos).addEnemyProb(strength);
 	}
 
 	public double getHitZoneProb(Position pos) {
-		// TODO Auto-generated method stub
-		return null;
+		return getField(pos).getHitZoneProb();
 	}
 
-	public double getBestHitZoneProb() {
-		// TODO Auto-generated method stub
-		return 0;
+	public List<Field> getBestEnemyProbs() {
+		return Arrays.stream(fields)
+			.flatMap(row->Arrays.stream(row))
+			.filter(Objects::nonNull)
+			.sorted((a,b)->-Double.compare(a.getEnemyProb(), b.getEnemyProb()))
+			.collect(Collectors.toList());
+	}
+
+	public Field getField(Position pos) {
+		return getField(pos.x(), pos.y());
 	}
 }

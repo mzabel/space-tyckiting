@@ -20,6 +20,7 @@ public class JAI {
 	private Grid grid;
 	private GameConfig config;
 	private Random r=new Random();
+	private List<Action> lastActions=new ArrayList<>();
 	
 	private JAI() {
 		System.out.println("New AI");
@@ -45,7 +46,7 @@ public class JAI {
 		
 		
 		grid.nextTurn(config.move());
-		updateGrid(events, bots);
+		updateGrid(events, bots, ownBots);
 		List<Action> actions=new ArrayList<>();
 		
 		List<Bot> scanner = new ArrayList<>();
@@ -73,6 +74,11 @@ public class JAI {
 		
 		shoot(actions, shooter, bestEnemyProbs);
 		scan(actions, scanner, ownBots, bestEnemyProbs);
+		
+		System.out.println();
+		for(Action a:actions)
+			System.out.println(a);
+		lastActions=actions;
 		return actions;
 	}
 
@@ -80,7 +86,7 @@ public class JAI {
 		LinkedHashSet<Position> candidates = new LinkedHashSet<>(bestEnemyProbs.stream().map(Field::getPos).collect(Collectors.toList()));
 		for(Bot b:ownBots) {
 			if(b.alive()) {
-				candidates.removeAll(GridUtil.iterateRadius(b.pos().x(), b.pos().y(), config.see()));
+				candidates.removeAll(GridUtil.iterateRadius(b.pos().x(), b.pos().y(), config.see()+2));
 			}
 		}
 		for(Bot b:scanner) {
@@ -91,7 +97,7 @@ public class JAI {
 			else {
 				Position best=candidates.iterator().next();
 				System.out.println("\t"+b.botId()+"\tscans "+best);
-				candidates.removeAll(GridUtil.iterateRadius(best.x(), best.y(), config.radar()));
+				candidates.removeAll(GridUtil.iterateRadius(best.x(), best.y(), config.radar()+2));
 				actions.add(Actions.radar(b, best));
 			}
 		}
@@ -101,18 +107,22 @@ public class JAI {
 		botsLoop:for(Bot b:shooter) {
 			for(Field target:bestEnemyProbs) {
 				if(r.nextDouble()<prob(target.getEnemyProb())) {
-					actions.add(Actions.cannon(b, target.getPos()));
-					System.out.println("\t"+b.botId()+"\tshoots at "+target.getPos()+" with "+prob(target.getEnemyProb()));
+					List<Field> targetCandidates=new ArrayList<>(target.getNeighbors(1));
+					Field realTarget = targetCandidates.get(r.nextInt(targetCandidates.size()));
+					
+					actions.add(Actions.cannon(b, realTarget.getPos()));
+					System.out.println("\t"+b.botId()+"\tshoots at "+realTarget.getPos()+"("+target.getPos()+") with "+prob(target.getEnemyProb()));
 					continue botsLoop;
 				}
 			}
 			actions.add(Actions.cannon(b, bestEnemyProbs.get(0).getPos()));
+			System.out.println("\t"+b.botId()+"\tshoots randomly at "+bestEnemyProbs.get(0).getPos());
 		}
 	}
 
 	private MoveAction move(Bot b) {
 		int moveRange;
-		if(r.nextDouble()<0.333)
+		if(r.nextDouble()<0.666)
 			moveRange=config.move();
 		else
 			moveRange=r.nextInt(config.move()+1);
@@ -126,7 +136,20 @@ public class JAI {
 		return prob/(prob+1);
 	}
 
-	private void updateGrid(List<Event> events, Bot[] ownBots) {
+	private void updateGrid(List<Event> events, Bot[] ownBots, List<Bot> ownBotList) {
+		//set sight to 0 probability
+		for(Bot b:ownBotList)
+			for(Position p:GridUtil.iterateRadius(b.pos().x(), b.pos().y(), config.see()))
+				grid.setEnemyProb(p,0);
+		//set last scans to 0 probability
+		for(Action a:lastActions) {
+			if(a instanceof RadarAction) {
+				Position t=((RadarAction) a).pos();
+				for(Position p:GridUtil.iterateRadius(t.x(), t.y(), config.radar()))
+					grid.setEnemyProb(p,0);
+			}
+		}
+		
 		for (Event e : events) {
 			//TODO set sight and old scan to zero beforehand
 			/*if(e instanceof HitEvent) {

@@ -1,9 +1,8 @@
 package com.marmar;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import tyckiting.Position;
@@ -11,19 +10,20 @@ import tyckiting.Position;
 public class Grid {
 	private int offset;
 	private Field[][] fields;
-	private List<Position> kernel;
+	private ArrayList<Field> fieldList;
 	
 	public Grid(int mapSize) {
 		offset=mapSize;
 		fields=new Field[mapSize*2+1][mapSize*2+1];
-		for(Position p:GridUtil.iterateRadius(0, 0, mapSize))
-			fields[offset+p.x()][offset+p.y()]=new Field(p.x(),p.y());
-		for(Field[] row:fields) {
-			for(Field f:row) {
-				if(f!=null) {
-					f.learnNeighbors(this);
-				}
-			}
+		fieldList=new ArrayList<>();
+		for(Position p:GridUtil.iterateRadius(0, 0, mapSize)) {
+			Field f=new Field(p.x(),p.y());
+			fields[offset+p.x()][offset+p.y()]=f;
+			fieldList.add(f);
+		}
+		fieldList.trimToSize();
+		for(Field f:fieldList) {
+			f.learnNeighbors(this);
 		}
 	}
 	
@@ -49,20 +49,10 @@ public class Grid {
 	}
 	
 	public void nextTurn(int maxMove) {
-		for(Field[] row:fields) {
-			for(Field f:row) {
-				if(f!=null) {
-					f.nextTurn();
-				}
-			}
-		}
-		for(Field[] row:fields) {
-			for(Field f:row) {
-				if(f!=null) {
-					f.blur(maxMove);
-				}
-			}
-		}
+		for(Field f:fieldList)
+				f.nextTurn();
+		for(Field f:fieldList)
+			f.blur(maxMove);
 	}
 
 	public void addHitZoneProb(Position pos, double strength) {
@@ -78,14 +68,20 @@ public class Grid {
 	}
 
 	public List<Field> getBestEnemyProbs() {
-		return Arrays.stream(fields)
-			.flatMap(row->Arrays.stream(row))
-			.filter(Objects::nonNull)
+		ArrayList<Field> l=new ArrayList<>(fieldList);
+		Collections.shuffle(l);
+		return l.stream()
 			.sorted((a,b)->-Double.compare(a.getEnemyProb(), b.getEnemyProb()))
 			.collect(Collectors.toList());
 	}
 
 	public Field getField(Position pos) {
 		return getField(pos.x(), pos.y());
+	}
+
+	public void setEnemyProb(Position pos, double value) {
+		Field f=getField(pos);
+		if(f!=null)
+			f.setEnemyProb(value);
 	}
 }

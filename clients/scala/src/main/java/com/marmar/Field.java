@@ -70,8 +70,8 @@ public class Field {
 		}
 		enemyProb/=enemyNeighbors;
 		hitZoneProb/=hitZoneNeighbors;
-		enemyProb*=0.75;
-		hitZoneProb*=0.75;
+		enemyProb=0.75*enemyProb+0.0075;
+		hitZoneProb=0.75*hitZoneProb+0.0075;
 	}
 
 	public void addHitZoneProb(double strength) {
@@ -92,6 +92,10 @@ public class Field {
 
 	public Position getPos() {
 		return new Position(x, y);
+	}
+
+	public void setEnemyProb(double value) {
+		enemyProb=value;
 	}
 	
 	
